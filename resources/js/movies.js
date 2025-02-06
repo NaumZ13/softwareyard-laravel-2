@@ -3,15 +3,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchMovie');
     const movieResults = document.getElementById('movieResults');
     const loadingDiv = document.getElementById('loading');
+    const sortByDropdown = document.getElementById('sortBy');
+    const prevPageButton = document.getElementById('prevPage');
+    const nextPageButton = document.getElementById('nextPage');
+    const pageInfo = document.getElementById('pageInfo');
 
     let currentPage = 1;
     let totalPages = 1;
     let isLoading = false;
     let query = '';
 
-    const fetchMovies = async (query, page = 1) => {
+    const fetchMovies = async (query, page = 1, sortBy = 'release_date.desc') => {
         try {
-            const response = await fetch(`/searchMovie?searchMovie=${encodeURIComponent(query)}&page=${page}`);
+            const response = await fetch(`/searchMovie?searchMovie=${encodeURIComponent(query)}&page=${page}&sortBy=${sortBy}`);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
@@ -23,14 +27,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const renderMovies = (movies) => {
-        if (!movies || !movies.results || movies.results.length === 0) {
-            if (currentPage === 1) {
-                movieResults.innerHTML = "<p class='text-red-400 text-2xl text-center'>No movies found.</p>";
-            }
+        if (!movies || movies.length === 0) {
+            movieResults.innerHTML = "<p class='text-red-400 text-2xl text-center'>No movies found.</p>";
+            document.getElementById('sortingControls').classList.add('hidden');
+            document.getElementById('pagination').classList.add('hidden');
             return;
         }
-    
-        movieResults.innerHTML += movies.results.map(movie => movieCardTemplate(movie)).join("");
+
+        movieResults.innerHTML = '';
+
+        movieResults.innerHTML = movies.map(movie => movieCardTemplate(movie)).join("");
     };
 
     const movieCardTemplate = (movie) => `
@@ -53,45 +59,56 @@ document.addEventListener('DOMContentLoaded', () => {
         return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
     };
 
-    const loadMoreMovies = async () => {
-        if (isLoading || currentPage >= totalPages) return;
-    
-        isLoading = true;
-        loadingDiv.classList.remove('hidden');
-    
-        try {
-            const data = await fetchMovies(query, currentPage + 1);
-            if (data && data.results && data.results.length > 0) {
-                currentPage++;
-                totalPages = data.total_pages;
-                renderMovies(data);
+    const sortMovies = (movies, sortBy) => {
+        const [sortField, sortOrder] = sortBy.split('.');
+
+        return movies.sort((a, b) => {
+            if (sortField === 'release_date') {
+                const dateA = new Date(a.release_date);
+                const dateB = new Date(b.release_date);
+                return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+            } else if (sortField === 'title') {
+                const titleA = a.title.toLowerCase();
+                const titleB = b.title.toLowerCase();
+                return sortOrder === 'asc' ? titleA.localeCompare(titleB) : titleB.localeCompare(titleA);
             }
-        } catch (error) {
-            console.error('Error loading more movies:', error);
-        } finally {
-            isLoading = false;
-            loadingDiv.classList.add('hidden');
-        }
+            return 0;
+        });
+    };
+
+    const updatePagination = () => {
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+        prevPageButton.disabled = currentPage === 1;
+        nextPageButton.disabled = currentPage === totalPages;
     };
 
     const searchMovies = async () => {
         query = searchInput.value.trim();
         if (query === "") {
             movieResults.innerHTML = "<p class='text-red-400 text-2xl'>Please enter a search term.</p>";
+            document.getElementById('sortingControls').classList.add('hidden');
+            document.getElementById('pagination').classList.add('hidden');
             return;
         }
-    
+
         currentPage = 1;
-        totalPages = 1;
         movieResults.innerHTML = '';
         isLoading = true;
         loadingDiv.classList.remove('hidden');
-    
+
+        document.getElementById('sortingControls').classList.add('hidden');
+        document.getElementById('pagination').classList.add('hidden');
+
         try {
-            const data = await fetchMovies(query, currentPage);
+            const data = await fetchMovies(query, currentPage, sortByDropdown.value);
             if (data && data.results) {
                 totalPages = data.total_pages;
-                renderMovies(data);
+
+                document.getElementById('sortingControls').classList.remove('hidden');
+                document.getElementById('pagination').classList.remove('hidden');
+                
+                renderMovies(sortMovies(data.results, sortByDropdown.value));
+                updatePagination();
             }
         } catch (error) {
             console.error('Error fetching movies:', error);
@@ -101,17 +118,50 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.addEventListener('scroll', () => {
-        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
-            loadMoreMovies();
+    const loadPage = async (page) => {
+        if (isLoading) return;
+
+        isLoading = true;
+        loadingDiv.classList.remove('hidden');
+
+        try {
+            const data = await fetchMovies(query, page, sortByDropdown.value);
+            if (data && data.results) {
+                currentPage = page;
+                renderMovies(sortMovies(data.results, sortByDropdown.value));
+                updatePagination();
+            }
+        } catch (error) {
+            console.error('Error fetching movies:', error);
+        } finally {
+            isLoading = false;
+            loadingDiv.classList.add('hidden');
         }
-    });
+    };
 
     searchButton.addEventListener('click', searchMovies);
 
     searchInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             searchMovies();
+        }
+    });
+
+    prevPageButton.addEventListener('click', () => {
+        if (currentPage > 1) {
+            loadPage(currentPage - 1);
+        }
+    });
+
+    nextPageButton.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            loadPage(currentPage + 1);
+        }
+    });
+
+    sortByDropdown.addEventListener('change', () => {
+        if (query) {
+            loadPage(currentPage);
         }
     });
 });

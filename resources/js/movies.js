@@ -40,12 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const movieCardTemplate = (movie) => `
-        <a href="/movie/${movie.id}" class="movie-card flex flex-col h-full">
-            <div class="bg-sky-200 rounded-lg shadow hover:shadow-lg transform transition-transform duration-300 hover:scale-105 h-full flex flex-col">
-                ${movie.poster_path ? 
-                    `<img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}" class="w-full h-64 object-cover hover:opacity-75 transition ease-in-out duration-150">` :
-                    `<div class="w-full h-64 bg-gray-200 flex items-center justify-center text-gray-500">No Image Available</div>`
-                }
+        <a href="/movie/${movie.id}" class="movie-card flex flex-col h-full group">
+            <div class="bg-sky-200 rounded-lg shadow hover:shadow-lg transform transition-transform duration-300 hover:scale-105 h-full flex flex-col overflow-hidden">
+                <div class="relative h-64 overflow-hidden">
+                    ${movie.poster_path ? 
+                        `<img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-100">` :
+                        `<div class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">No Image Available</div>`
+                    }
+                </div>
                 <div class="p-2 sm:p-4 flex-grow flex flex-col justify-between">
                     <h2 class="text-sm sm:text-lg font-semibold text-gray-800">${movie.title}</h2>
                     ${movie.release_date ? `<p class="text-gray-500 mt-2">Released: ${movie.release_date.split('-')[0]}</p>` : ''}

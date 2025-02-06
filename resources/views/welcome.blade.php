@@ -7,12 +7,13 @@
     <div class="mt-10">
         <x-search-movie />
     </div>
-    
+
     <div id="sortingControls" class="flex justify-end hidden">
         <select id="sortBy" class="mt-4 p-2 border border-gray-300 rounded-lg">
             <option value="release_date.desc">Release Date (Newest First)</option>
             <option value="release_date.asc">Release Date (Oldest First)</option>
             <option value="title.asc">Title ( A-Z )</option>
+            <option value="title.desc">Title ( Z-A )</option>
         </select>
     </div>
 

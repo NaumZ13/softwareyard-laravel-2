@@ -40,13 +40,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const movieCardTemplate = (movie) => `
-        <a href="/movie/${movie.id}" class="movie-card" data-id="${movie.id}">
-            <div class="bg-sky-200 rounded-lg shadow hover:shadow-lg transform transition-transform duration-300 hover:scale-105">
-               ${movie.poster_path ? 
-                `<img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}" class="hover:opacity-75 transition ease-in-out duration-150 w-full">` :
-                `<div class="w-full h-64 bg-gray-200 flex items-center justify-center text-gray-500">No Image Available</div>`
-            }
-                <div class="p-2 sm:p-4 flex-grow">
+        <a href="/movie/${movie.id}" class="movie-card flex flex-col h-full">
+            <div class="bg-sky-200 rounded-lg shadow hover:shadow-lg transform transition-transform duration-300 hover:scale-105 h-full flex flex-col">
+                ${movie.poster_path ? 
+                    `<img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}" class="w-full h-64 object-cover hover:opacity-75 transition ease-in-out duration-150">` :
+                    `<div class="w-full h-64 bg-gray-200 flex items-center justify-center text-gray-500">No Image Available</div>`
+                }
+                <div class="p-2 sm:p-4 flex-grow flex flex-col justify-between">
                     <h2 class="text-sm sm:text-lg font-semibold text-gray-800">${movie.title}</h2>
                     ${movie.release_date ? `<p class="text-gray-500 mt-2">Released: ${movie.release_date.split('-')[0]}</p>` : ''}
                     <p class="text-gray-500 mt-2 text-sm">${truncateText(movie.overview, 100)}</p>
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sortMovies = (movies, sortBy) => {
         const [sortField, sortOrder] = sortBy.split('.');
-
+    
         return movies.sort((a, b) => {
             if (sortField === 'release_date') {
                 const dateA = new Date(a.release_date);
@@ -70,7 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (sortField === 'title') {
                 const titleA = a.title.toLowerCase();
                 const titleB = b.title.toLowerCase();
-                return sortOrder === 'asc' ? titleA.localeCompare(titleB) : titleB.localeCompare(titleA);
+                if (sortOrder === 'asc') {
+                    return titleA.localeCompare(titleB); 
+                } else {
+                    return titleB.localeCompare(titleA);
+                }
             }
             return 0;
         });
@@ -106,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 document.getElementById('sortingControls').classList.remove('hidden');
                 document.getElementById('pagination').classList.remove('hidden');
-                
+
                 renderMovies(sortMovies(data.results, sortByDropdown.value));
                 updatePagination();
             }
